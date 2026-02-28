@@ -1,10 +1,13 @@
-# NTT EVM Deployment Workflow (Step by Step)
+# NTT Multi-Chain Deployment Workflow (EVM, SVM, Sui)
+
+This workflow applies universally across all Wormhole-supported ecosystems. The `ntt` CLI abstracts most of the complexity, but you must branch your approach slightly depending on the network (EVM vs Solana vs Sui).
 
 ## Prerequisites
 - Tokens already deployed on source and destination chains
-- Token must implement `INttToken` interface for burning mode: `mint(address,uint256)`, `burn(uint256)`, `setMinter(address)`
-- Private key with ETH for gas on both chains
-- Etherscan API keys for contract verification
+- EVM: Token must implement `mint` / `burn` / `grantRole` or `setMinter`
+- Solana (SVM): Have your program keypair and payer keypair JSON files ready
+- Sui: Have your Treasury Cap object ID ready for burning mode
+- Private keys funded with native gas on all target chains
 
 ## Step 1: Create & Initialize Project
 ```bash
@@ -21,20 +24,25 @@ export SEPOLIA_SCAN_API_KEY=...
 export BASESEPOLIA_SCAN_API_KEY=...
 ```
 
-## Step 3: Add First Chain
+## Step 3: Add Chains (EVM, SVM, Sui)
+The `add-chain` command syntax differs slightly based on the network's security model.
+
+**EVM (Ethereum, Base, Arbitrum, etc.)**
 ```bash
 ntt add-chain Sepolia --latest --mode burning --token 0xYourTokenAddress
 ```
-This deploys:
-- NttManager proxy + implementation
-- WormholeTransceiver proxy + implementation
-- Configures manager with token, mode, and transceiver
 
-## Step 4: Add Second Chain
+**SVM (Solana)**
+*Note: Solana requires explicit keypair paths instead of environment variables.*
 ```bash
-ntt add-chain BaseSepolia --latest --mode burning --token 0xYourOtherTokenAddress
+ntt add-chain Solana --latest --mode burning --token SolTokenAddress1... --payer ./payer.json
 ```
-Same deployment on second chain.
+
+**Sui**
+*Note: Sui burning mode requires explicitly passing the treasury cap.*
+```bash
+ntt add-chain Sui --latest --mode burning --token 0xSuiToken... --sui-treasury-cap 0xTreasuryCapObj...
+```
 
 ## Step 5: Configure Rate Limits
 Edit `deployment.json` to set limits:
@@ -58,14 +66,37 @@ This:
 - Sets transceiver peers
 - Registers transceivers with managers
 
-## Step 7: Set Mint Authority
-For burning mode, the NTT Manager needs mint permission:
+## Step 6: Configure Manager Liquidity / Permissions
+The NTT Manager must have access to tokens before it can process inbound transfers. The setup depends entirely on your `--mode`:
+
+### Option A: Burning Mode (Burn-and-Mint)
+The Manager must be granted permission to mint the Host Token. This process is highly chain-specific:
+
+**EVM (Manual Contract Call):**
+The CLI cannot do this for EVM. You must use Foundry or Hardhat.
 ```bash
 # Get manager address from deployment.json
 cast send $TOKEN_ADDRESS "setMinter(address)" $NTT_MANAGER_ADDRESS \
     --private-key $ETH_PRIVATE_KEY --rpc-url $RPC_URL
 ```
-Do this on BOTH chains for burn-and-mint.
+
+**SVM (Solana CLI Native):**
+Wormhole provides a built-in CLI command for Solana SPL tokens.
+```bash
+ntt set-mint-authority --chain Solana --token SolToken1... --manager SolManager1... --payer ./payer.json
+```
+
+**Sui:**
+Burn authority is handled automatically during `add-chain` if you correctly pass the `--sui-treasury-cap`.
+
+### Option B: Locking Mode (Hub-and-Spoke)
+If a chain is deployed in `locking` mode, the Manager does not mint tokens. Instead, it unlocks existing tokens from a liquidity pool. Before a locking chain can receive a transfer, you must seed the Manager contract with actual token liquidity.
+
+```bash
+# Transfer tokens to the NttManager address to seed initial inbound liquidity
+cast send $TOKEN_ADDRESS "transfer(address,uint256)" $NTT_MANAGER_ADDRESS 1000000000000000000000 \
+    --private-key $ETH_PRIVATE_KEY --rpc-url $RPC_URL
+```
 
 ## Step 8: Verify Deployment
 ```bash
@@ -89,8 +120,21 @@ If using hub-and-spoke instead of burn-and-mint:
 - Hub chain: `--mode locking` (no mint authority needed, standard ERC-20 ok)
 - Spoke chains: `--mode burning` (needs INttToken + mint authority)
 
+## Handling On-Chain Deployment Failures
+Deploying to testnets and mainnets can be flaky. If `ntt push` or `ntt add-chain` hangs or crashes midway:
+- **RPC Timeouts:** Public RPCs (like Ankr or public Infura) aggressively rate-limit deployment scripts. If the CLI hangs, switch to a dedicated API key in your `.env` (e.g., Alchemy, QuickNode) and use `overrides.json` to force the CLI to use it.
+- **Gas Estimation Failures:** Testnets experience sudden gas spikes. Do NOT use standard `--gas-price` flags. The Wormhole NTT CLI relies on `ethers.js` dynamic fee estimation. If transactions stall, append `--gas-estimate-multiplier <NUMBER>` (e.g., `1.5`) to force the CLI to overpay for gas.
+- **Nonce Conflicts & Stuck TXs:** The CLI uses `NonceManager.increment()` which can desync if a transaction drops. You *must* manually cancel the stuck TX in MetaMask or wait for network drops before retrying `ntt push`.
+- **Partial Deployments:** If a deployment fails halfway through, **do not immediately restart**. Run `ntt status` to see what actually landed on-chain. You might need to manually intervene or cleanly delete the pending state from `.deployments/` before retrying.
+
 ## Troubleshooting
 - **"No protocols registered for Evm"**: Import `@wormhole-foundation/sdk-evm-ntt`
 - **Verification fails**: Use `--skip-verify` flag, verify later manually
 - **Rate limit stuck**: Ensure limits > 0 before any transfers
 - **Decimals wrong**: Run `ntt pull` to sync decimals from on-chain
+
+## Step 10: Implement (Frontend/SDK)
+Once deployment and CLI transfers are verified, transition to the **Implement** phase of the E2E lifecycle:
+1. Extract your deployed `token` and `manager` addresses from the generated `deployment.json`.
+2. Review the **Product Ecosystem Overview** in `SKILL.md` to select your interface (Connect UI widget vs TypeScript SDK).
+3. Ingest the corresponding dynamic `llms.txt` file (e.g., `llms-connect.txt`) and pass your `deployment.json` addresses into the frontend configuration to complete the integration.

@@ -1,146 +1,109 @@
 ---
-name: wormhole
-description: Wormhole cross-chain protocol knowledge — NTT (Native Token Transfers) deployment, CLI commands, architecture, and testing workflows. Use when working with Wormhole NTT CLI, deploying cross-chain token transfers, or debugging NTT configurations.
+name: blockchain-interop
+description: Wormhole ecosystem expertise — End-to-End lifecycle (Deploy, Transfer, Implement). Trigger this skill WHENEVER the user mentions Wormhole, cross-chain bridging, NTT (Native Token Transfers), CCTP, or Core Messaging. MUST trigger for deploying smart contracts (Hub-and-Spoke), configuring CLI/rate limits, or building bridge frontends/SDK integrations (TypeScript, Wormhole Connect React widgets, VAA layout serialization errors, missing deployment paths, 429 rate limits, and manual VAA claims).
 ---
 
-# Wormhole Protocol — NTT Focus
+# Wormhole Ecosystem & NTT Protocol
 
-## Core Concepts
+Comprehensive guide for the Wormhole cross-chain messaging ecosystem, with a specific focus on the Native Token Transfers (NTT) framework.
 
-**Wormhole** is a cross-chain messaging protocol. **NTT (Native Token Transfers)** is its framework for transferring native tokens across blockchains without wrapping.
+## When to Apply
 
-### Deployment Models
+Reference these guidelines when working within the Wormhole ecosystem:
 
-- **Hub-and-Spoke (locking):** Hub chain locks tokens, spoke chains mint. Hub uses `locking` mode, spokes use `burning` mode. Only needs standard ERC-20 on hub.
-- **Burn-and-Mint:** All chains use `burning` mode. Requires `burn(uint256)` and `mint(address,uint256)` on token contract. Mint authority must be set to NTT Manager on ALL chains.
-- **Lock-and-Lock:** NOT supported by NTT.
+- **End-to-End Orchestration:** Developing the full lifecycle of a Wormhole project (Smart Contract Strategy -> Frontend Integration -> Deployment Operations).
+- **Architecture Planning:** Selecting the correct bridging primitive (NTT, Core Messaging, Connect, CCTP) based on token supremacy and liquidity needs.
+- **Observability & Finality Design:** Designing robust, asynchronous frontend experiences that can gracefully handle multi-chain latencies (e.g., 15+ minute Guardian finality) and network rate limits.
+- **Deep-Dive Engineering:** Navigating the dense, open-source Wormhole monorepo. When standard SDK docs fail, use this skill to understand the underlying mechanics of VAAs, rate limit bounds, and contract deployment gotchas.
 
-### Architecture
+## Product Ecosystem Overview
 
-- **NttManager:** Controls token locking/burning, rate limiting, message verification
-- **Transceivers:** Route messages cross-chain (Wormhole Guardian or custom verification)
-- **INttToken interface:** Defines `mint(address,uint256)`, `burn(uint256)`, `setMinter(address)` — but NTT never calls `setMinter` itself. It only calls `mint` and relies on `burn` being available.
-- Same transceiver type required for all routes (can't mix per-chain)
+Wormhole operates via multiple interconnected products. When tasked with building or debugging in Wormhole, first identify which product applies to your objective and **immediately ingest its dynamic `llms.txt` documentation** before writing code:
 
-### Token Compatibility (Burning Mode)
+### 1. Native Token Transfers (NTT)
 
-NTT works with two common ERC-20 patterns for minting permission:
+**What it is:** A specialized framework for moving native tokens across chains seamlessly without liquidity pools or wrapping. Uses the `ntt` CLI for deployment.
+**When to use:** Deploying cross-chain tokens, managing minting authorities, or configuring rate limits for a specific token project.
+**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-ntt.txt`
 
-1. **AccessControl (OZ):** Token uses `grantRole(MINTER_ROLE, address)`. Grant `MINTER_ROLE` to the NTT Manager. `MINTER_ROLE = keccak256("MINTER_ROLE") = 0x9f2df0fed...`
-2. **Ownable + INttToken:** Token has `setMinter(address)` or similar owner-only method to designate one minter. Call it to set NTT Manager as the minter.
+### 2. Wormhole SDK (TypeScript)
 
-In both cases, NTT Manager only ever calls `mint(address, uint256)` on the token. The `burn(uint256)` is typically from ERC20Burnable (permissionless for own tokens). The `setMinter` in the INttToken interface is for the token owner to configure — NTT contracts never invoke it.
+**What it is:** The programmatic interface for writing Node.js backend scripts or frontend dApps.
+**When to use:** Manually claiming VAAs on a frontend, programmatically executing transfers, parsing Wormhole messages, or writing custom bridge logic.
+**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-typescript-sdk.txt`
 
-### Rate Limiting
+### 3. Wormhole Connect (React / HTML)
 
-- Outbound: single limit for all destinations
-- Inbound: configurable per source chain
-- Uses 18 decimals for EVM, 9 for SVM/Sui
-- Zero limits cause stuck transactions — always set > 0
-- Queuing: `shouldQueue=true` queues transfers exceeding limits
+**What it is:** A drop-in UI component (React or raw HTML widget) that gives users a pre-built frontend bridge experience.
+**When to use:** Building user-facing React dApps that need a visual bridging widget quickly.
+**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-connect.txt`
 
-## NTT CLI Quick Reference
+### 4. Cross-Chain Transfer Protocol (CCTP)
 
-See `references/cli-commands.md` for full command reference.
-See `references/deployment-workflow.md` for step-by-step deployment.
-See `references/testing-guide.md` for E2E testing procedures.
+**What it is:** Circle's native USDC routing protocol, deeply integrated into Wormhole.
+**When to use:** Explicitly and exclusively when transferring USDC across chains.
+**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-cctp.txt`
 
-### Key Commands
+### 5. Core Messaging & Relayers
 
-```bash
-ntt new <path>              # Create project
-ntt init Testnet|Mainnet    # Initialize deployment.json
-ntt add-chain <Chain> --latest --mode burning|locking --token <addr> [--skip-verify]
-ntt push                    # Push config on-chain
-ntt pull                    # Sync local from on-chain
-ntt status                  # Verify deployment
-ntt token-transfer          # Transfer tokens between chains
+**What it is:** The base layer of the Wormhole protocol that simply sends arbitrary byte messages (VAAs) between Smart Contracts.
+**When to use:** Building low-level custom protocols, custom smart contract logic, or understanding how Guardians and Relayers function under the hood.
+**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-relayers.txt`
+
+## Multi-Chain Architecture Domains
+
+Evaluate every Wormhole integration through the lens of these four architectural domains to ensure a successful, end-to-end multi-chain app deployment.
+
+| Domain                       | Focus                     | Key Concept              | Examples                                                                                                                                       |
+| ---------------------------- | ------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Smart Contract Strategy**  | Protocol Design           | Mint/Burn vs Lock/Unlock | Does the origin chain lock liquidity while sibling chains mint? Evaluating token supply models.                                                |
+| **Frontend Integration**     | User Experience           | Wormhole Connect vs SDK  | Should we embed a drop-in React widget for speed, or build a custom polling hook via `@wormhole-foundation/sdk` for control?                   |
+| **Deployment Operations**    | Multi-Environment Control | CLI & Configuration      | Managing environment variables, orchestrating `ntt push` across testnets, defining rate limits in `deployment.json`.                           |
+| **Observability & Finality** | Network States            | Verifiable VAAs          | Designing applications to handle asynchronous block finality (15+ min delays) and providing elegant VAA retry mechanisms for failed transfers. |
+
+## Multi-Chain Deployment Principles
+
+When guiding a user through building a multi-chain application, apply these overarching principles:
+
+### 1. Smart Contract Strategy (Protocol Layer)
+
+- **Token Supremacy:** Wormhole does not create tokens; it moves them. The user's underlying ERC20/SPL tokens must be structurally ready for bridging (i.e. explicitly granting Mint/Burn permissions to the NTT Manager, or relying on locked liquidity pools).
+- **Data Serialization:** Any custom cross-chain data (VAAs) must have mathematically identical byte-layouts on all connected chains, otherwise serialization fails silently across network boundaries.
+
+### 2. Frontend Integration (Application Layer)
+
+- **Asynchronous UX:** The biggest hurdle in multi-chain apps is User Experience during finality delays. Frontends must cleanly communicate to the user that a transaction has submitted, but might take 15 minutes to be verified by Guardians before it can be claimed on the destination.
+- **Graceful Retries:** Always anticipate `429 Rate Limit` errors when polling Guardian nodes via the SDK. Applications must implement exponential backoff rather than crashing.
+
+### 3. Deployment Operations (Infrastructure Layer)
+
+- **Configuration Parity:** The `deployment.json` file is the master state. Sibling chains must constantly sync their awareness of each other via `ntt pull` before new transfers are tested.
+- **Testnet Volatility:** Assume testnet deployments will drop transactions. Guide users to rely on explicit gas multipliers (`--gas-estimate-multiplier`) and manual nonce-overrides instead of typical local-development foundry flags.
+
+## How to Use
+
+### Dynamic LLMs Context
+
+If your task does not clearly fall into one of the 5 products listed above, consult the master index `llms.txt` to find the correct domain:
+
+- **General Token Bridge:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-token-bridge.txt`
+- **Full Ecosystem Master Index:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms.txt`
+
+### Local Reference Files
+
+Read the following reference files for step-by-step instructions, troubleshooting details, and code examples:
+
+```
+references/deployment-workflow.md  # Step-by-step chain deployment
+references/testing-guide.md        # E2E testing procedures and balance checks
+references/cli-commands.md         # Full command and flag reference
+references/troubleshooting.md      # Detailed gotchas and manual VAA claiming
+references/local-development.md    # Environment variables, deployment.json schema, and bun testing apps
 ```
 
-### Environment Variables
+## Core Concepts Background
 
-Bun auto-loads `.env` from cwd — just place `.env` in the project directory (next to `deployment.json`). No manual `export` needed.
-
-```bash
-# .env
-ETH_PRIVATE_KEY=0x...                    # EVM deployer key
-SEPOLIA_SCAN_API_KEY=...                 # Etherscan API key (chain-specific prefix)
-BASESEPOLIA_SCAN_API_KEY=...             # Base Sepolia scan key
-```
-
-### deployment.json Structure
-
-```json
-{
-    "network": "Testnet",
-    "chains": {
-        "Sepolia": {
-            "version": "3.0.0",
-            "mode": "burning",
-            "paused": false,
-            "owner": "0x...",
-            "manager": "0x...",
-            "token": "0x...",
-            "transceivers": {
-                "threshold": 1,
-                "wormhole": { "address": "0x..." }
-            },
-            "limits": {
-                "outbound": "1000.000000000000000000",
-                "inbound": { "BaseSepolia": "500.000000000000000000" }
-            }
-        }
-    }
-}
-```
-
-## Local Development (This Repo)
-
-### Running NTT CLI locally
-
-```bash
-bun run cli/src/index.ts <command> [args]    # NOT `ntt` — use bun directly
-bun run cli/src/index.ts --help
-bun run cli/src/index.ts add-chain --help
-```
-
-### Testing
-
-```bash
-bun test cli/src/__tests__/                  # Run all tests (from project root!)
-bun run --cwd cli typecheck                  # TypeScript check
-```
-
-### Chain Names (Testnet)
-
-Sepolia, BaseSepolia, ArbitrumSepolia, OptimismSepolia, Solana (devnet)
-
-### Setting Mint Authority (EVM burning mode)
-
-**INttToken pattern** (has `setMinter`):
-
-```bash
-cast send $TOKEN_ADDRESS "setMinter(address)" $NTT_MANAGER_ADDRESS \
-    --private-key $ETH_PRIVATE_KEY --rpc-url $RPC_URL
-```
-
-**AccessControl pattern** (OZ `grantRole`):
-
-```bash
-MINTER_ROLE=0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6
-cast send $TOKEN_ADDRESS "grantRole(bytes32,address)" $MINTER_ROLE $NTT_MANAGER_ADDRESS \
-    --private-key $ETH_PRIVATE_KEY --rpc-url $RPC_URL
-```
-
-NTT Manager only calls `mint(address,uint256)` — as long as it has permission, both patterns work.
-
-## Common Gotchas
-
-1. Token only needs `mint(address,uint256)` and `burn(uint256)` for burning mode. NTT never calls `setMinter` — permission is granted by the token owner via `grantRole` (AccessControl) or `setMinter` (Ownable), depending on the token's pattern.
-2. `ntt pull` must be run to configure decimals in deployment.json
-3. Scan API key env var format: `<CHAIN>_SCAN_API_KEY` (e.g., `SEPOLIA_SCAN_API_KEY`)
-4. Rate limit decimals: 18 for EVM, 9 for SVM/Sui
-5. Wormhole Testnet uses real testnets (Sepolia, Base Sepolia, etc.)
-6. `set-mint-authority` CLI command is SVM-only. For EVM, grant permission manually via cast.
-7. Bun auto-loads `.env` from cwd — never manually export private keys. Keep them in `.env` next to `deployment.json`.
-8. Deployment workflow: `add-chain` (deploy) -> `pull` (sync decimals/state) -> edit limits in deployment.json -> `push` (set peers + limits) -> `status` (verify).
+- **Deployment Models:** Hub-and-Spoke (hub locks, spoke burns) or Burn-and-Mint (all burn).
+- **Architecture:** NttManager controls limits/verification; Transceivers route messages.
+- **Token Compatibility:** NTT calls `mint(address, uint256)` on the host token. The token owner grants permission via `grantRole(MINTER_ROLE, address)` or `setMinter(address)`.
+- **Bun Environment:** Use `bun run cli/src/index.ts` for local development instead of `ntt`. Auto-loads `.env` from cwd.

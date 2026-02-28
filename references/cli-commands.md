@@ -48,12 +48,14 @@
 ## Chain Names
 
 ### Testnet
-EVM: Sepolia, BaseSepolia, ArbitrumSepolia, OptimismSepolia, Holesky
+Wormhole supports a vast array of testnets. Some common ones include:
+EVM: Sepolia, BaseSepolia, ArbitrumSepolia, OptimismSepolia, Holesky, Bsc, Linea, Fuji
 SVM: Solana (uses devnet)
 Sui: Sui (uses testnet)
+*Tip: To see the full list of supported networks, look at the auto-complete options printed by `ntt add-chain --help`.*
 
 ### Mainnet
-EVM: Ethereum, Base, Arbitrum, Optimism, Polygon, Avalanche, Bsc, Fantom, Celo, Moonbeam
+EVM: Ethereum, Base, Arbitrum, Optimism, Polygon, Avalanche, Bsc, Fantom, Celo, Moonbeam, etc.
 SVM: Solana
 Sui: Sui
 
@@ -83,3 +85,13 @@ SUI_PRIVATE_KEY=...
   }
 }
 ```
+
+## E2E Lifecycle Mapping
+
+How these CLI commands map to your full project integration:
+
+| Lifecycle Phase | Primary CLI Commands | Action |
+|-----------------|-----------------------|--------|
+| **1. Deploy** | `ntt add-chain`, `ntt push`, `cast send setMinter` | Configure and permission the smart contracts across chains. |
+| **2. Transfer** | `ntt token-transfer`, `ntt pull` | Verify the bridge routes and rate limits work via terminal. |
+| **3. Implement** | *No CLI Command* | Parse the generated `deployment.json` addresses and pass them to the frontend TypeScript `@wormhole-foundation/sdk` or Connect UI widgets. |
