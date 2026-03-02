@@ -1,170 +1,201 @@
 ---
 name: blockchain-interop
-description: Wormhole ecosystem expertise — End-to-End lifecycle (Deploy, Transfer, Implement). Trigger this skill WHENEVER the user mentions Wormhole, cross-chain bridging, NTT (Native Token Transfers), CCTP, or Core Messaging. MUST trigger for deploying smart contracts (Hub-and-Spoke), configuring CLI/rate limits, or building bridge frontends/SDK integrations (TypeScript, Wormhole Connect React widgets, VAA layout serialization errors, missing deployment paths, 429 rate limits, and manual VAA claims).
+description: Wormhole interoperability expertise across the full product suite (Messaging, Token Transfers, NTT, CCTP Bridge, Connect, Settlement, Queries, MultiGov, SDK/CLI). Trigger this skill whenever users ask for Wormhole architecture, deployment, integration, operations, or debugging.
 ---
 
-# Wormhole Ecosystem & NTT Protocol
+# Wormhole Interoperability Protocol & Product Suite
 
-Comprehensive guide for the Wormhole cross-chain messaging ecosystem, with a specific focus on the Native Token Transfers (NTT) framework.
+Comprehensive guide for building and operating cross-chain applications with Wormhole.
+
+This skill is ecosystem-wide. NTT is one major workflow, not the only one.
 
 ## When to Apply
 
-Reference these guidelines when working within the Wormhole ecosystem:
+Use this skill when tasks involve any Wormhole product or core protocol behavior:
 
-- **End-to-End Orchestration:** Developing the full lifecycle of a Wormhole project (Smart Contract Strategy -> Frontend Integration -> Deployment Operations).
-- **Architecture Planning:** Selecting the correct bridging primitive (NTT, Core Messaging, Connect, CCTP) based on token supremacy and liquidity needs.
-- **Observability & Finality Design:** Designing robust, asynchronous frontend experiences that can gracefully handle multi-chain latencies (e.g., 15+ minute Guardian finality) and network rate limits.
-- **Deep-Dive Engineering:** Navigating the dense, open-source Wormhole monorepo. When standard SDK docs fail, use this skill to understand the underlying mechanics of VAAs, rate limit bounds, and contract deployment gotchas.
+- Product and architecture selection for cross-chain apps
+- Token transfer design (WTT, NTT, CCTP Bridge)
+- Messaging protocol implementation and delivery guarantees
+- Frontend bridge UX with Connect or custom SDK-based flows
+- Intent and execution flows with Settlement
+- Cross-chain state reads with Queries
+- Governance operations with MultiGov
+- Deployment, monitoring, and failure recovery across chains
 
-## Product Ecosystem Overview
+## Product Suite Overview
 
-Wormhole operates via multiple interconnected products. When tasked with building or debugging in Wormhole, first identify which product applies to your objective and **immediately ingest its dynamic `llms.txt` documentation** before writing code:
+Use the official docs root for navigation: `https://wormhole.com/docs/`.
 
-### 1. Native Token Transfers (NTT)
+| Product | High-level purpose | Typical use case |
+| --- | --- | --- |
+| Messaging | Pass arbitrary messages cross-chain | Custom app-level interoperability and protocol signaling |
+| Token Transfers | Move assets across chains using token transfer primitives | General token bridge behavior and wrapped token flows |
+| NTT (Native Token Transfers) | Native token transfer framework controlled by token issuers | Issuer-controlled token expansion across chains |
+| CCTP Bridge | Native USDC transfer and messaging path | USDC-specific cross-chain payments and treasury flows |
+| Connect | Drop-in transfer UI for apps | Fast integration of bridge UX in React/web apps |
+| Settlement | Intent-based cross-chain execution framework | Intent routing and destination execution patterns |
+| Queries | Read/verify on-chain state across networks | Cross-chain data access for apps and automation |
+| MultiGov | Multi-chain governance coordination | Governance actions spanning multiple chains |
+| TypeScript SDK | Programmatic interface to Wormhole products | Backend scripts, relayers, and custom dApp integrations |
+| CLI Tooling | Operational commands for product workflows (for example NTT CLI) | Deployment, config sync, and status checks |
 
-**What it is:** A specialized framework for moving native tokens across chains seamlessly without liquidity pools or wrapping. Uses the `ntt` CLI for deployment.
-**When to use:** Deploying cross-chain tokens, managing minting authorities, or configuring rate limits for a specific token project.
-**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-ntt.txt`
+### Product docs links
 
-### 2. Wormhole SDK (TypeScript)
+- Messaging: `https://wormhole.com/docs/products/messaging/overview/`
+- Token Transfers: `https://wormhole.com/docs/products/token-transfers/overview/`
+- NTT: `https://wormhole.com/docs/products/token-transfers/native-token-transfers/overview/`
+- CCTP Bridge: `https://wormhole.com/docs/products/token-transfers/cctp-bridge/overview/`
+- Connect: `https://wormhole.com/docs/products/connect/overview/`
+- Settlement: `https://wormhole.com/docs/products/settlement/overview/`
+- Queries: `https://wormhole.com/docs/products/queries/overview/`
+- MultiGov: `https://wormhole.com/docs/products/multigov/overview/`
+- TypeScript SDK: `https://wormhole.com/docs/products/typescript-sdk/overview/`
 
-**What it is:** The programmatic interface for writing Node.js backend scripts or frontend dApps.
-**When to use:** Manually claiming VAAs on a frontend, programmatically executing transfers, parsing Wormhole messages, or writing custom bridge logic.
-**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-typescript-sdk.txt`
+## Product Selection Quick Guide
 
-### 3. Wormhole Connect (React / HTML)
+Map user intent to product first, then implement:
 
-**What it is:** A drop-in UI component (React or raw HTML widget) that gives users a pre-built frontend bridge experience.
-**When to use:** Building user-facing React dApps that need a visual bridging widget quickly.
-**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-connect.txt`
-
-### 4. Cross-Chain Transfer Protocol (CCTP)
-
-**What it is:** Circle's native USDC routing protocol, deeply integrated into Wormhole.
-**When to use:** Explicitly and exclusively when transferring USDC across chains.
-**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-cctp.txt`
-
-### 5. Core Messaging & Relayers
-
-**What it is:** The base layer of the Wormhole protocol that simply sends arbitrary byte messages (VAAs) between Smart Contracts.
-**When to use:** Building low-level custom protocols, custom smart contract logic, or understanding how Guardians and Relayers function under the hood.
-**Dynamic Docs:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-relayers.txt`
+- "Send arbitrary payloads across chains" -> Messaging
+- "Move token value across chains" -> Token Transfers / NTT / CCTP Bridge
+- "USDC only" -> CCTP Bridge
+- "Ship UI fast" -> Connect
+- "Need custom transfer UX or backend control" -> TypeScript SDK
+- "Need intent execution" -> Settlement
+- "Need remote chain reads" -> Queries
+- "Need governance over many chains" -> MultiGov
 
 ## Multi-Chain Architecture Domains
 
-Evaluate every Wormhole integration through the lens of these four architectural domains to ensure a successful, end-to-end multi-chain app deployment.
+Evaluate every implementation through these domains:
 
-| Domain                       | Focus                     | Key Concept              | Examples                                                                                                                                       |
-| ---------------------------- | ------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Smart Contract Strategy**  | Protocol Design           | Mint/Burn vs Lock/Unlock | Does the origin chain lock liquidity while sibling chains mint? Evaluating token supply models.                                                |
-| **Frontend Integration**     | User Experience           | Wormhole Connect vs SDK  | Should we embed a drop-in React widget for speed, or build a custom polling hook via `@wormhole-foundation/sdk` for control?                   |
-| **Deployment Operations**    | Multi-Environment Control | CLI & Configuration      | Managing environment variables, orchestrating `ntt push` across testnets, defining rate limits in `deployment.json`.                           |
-| **Observability & Finality** | Network States            | Verifiable VAAs          | Designing applications to handle asynchronous block finality (15+ min delays) and providing elegant VAA retry mechanisms for failed transfers. |
+| Domain | Focus | Key question |
+| --- | --- | --- |
+| Smart Contract Strategy | Asset and message model | Are authority, mint/burn, and verification boundaries explicit? |
+| Frontend Integration | User journey and state transitions | Is asynchronous finality represented clearly in UX? |
+| Deployment Operations | Multi-env consistency and configuration | Is environment/config parity maintained across chains? |
+| Observability & Finality | Runtime confidence and recovery | Are attestations, retries, and manual recovery paths defined? |
 
 ## Universal Ecosystem Constraints
 
-### 1. Strict Version Parity (CRITICAL)
+### 1. Strict version parity (critical)
 
-Wormhole's architecture—spanning the `ntt` CLI, Smart Contracts, Connect React widgets, and the TypeScript SDKs—relies on strict internal compatibility. **Mismatches across any Wormhole ecosystem components will cause fatal, often silent bugs** (e.g., singleton registry collisions in TypeScript yielding `No protocols registered`, unsupported VAA payload layouts, React hydration crashes, or incompatible contract ABIs).
-**Rule:** When implementing ANY Wormhole product, an agent MUST consult the dynamic official documentation URLs provided in this skill to verify the current **CAUTION** ONLY after failing do to an implementation, check officially supported version matrix. Never guess version bounds; always prioritize the official documentation’s version recommendations to ensure perfect ecosystem alignment and avoid mixing incompatible generations.
+Wormhole integrations often compose multiple packages (SDK core, product plugins, Connect routes, CLI tooling).
+Version mismatches can fail at runtime with misleading errors.
 
-**SDK NTT Plugin Versioning:** The `@wormhole-foundation/sdk-evm-ntt` package is versioned independently from the core `@wormhole-foundation/sdk`. Always install both together and verify they are compatible—version mismatches cause silent `No protocols registered` errors at runtime because the NTT protocol handler fails to register with the SDK’s singleton registry.
+Rules:
 
-### 2. Step-by-Step Execution Discipline (CRITICAL)
+- Verify package compatibility before and after upgrades.
+- Keep SDK core and product plugins aligned.
+- Avoid mixing old and new examples without checking docs.
 
-Wormhole CLI commands are **order-dependent**. Each step produces artifacts (git repos, `deployment.json` state, on-chain contracts) that subsequent steps depend on. **Skipping or reordering steps causes cascading failures that look like tool bugs but are actually sequencing errors.**
-**Rules:**
+### 2. Asynchronous finality is normal
 
-- **NEVER improvise CLI commands.** Always follow `references/deployment-workflow.md` in exact sequential order.
-- **NEVER invent workarounds** (e.g., `git init`, `mkdir`, `--local`) when a command fails. Instead, re-read the relevant reference file to identify which prerequisite step was missed.
-- **When ANY command fails:** Stop. Re-read `references/troubleshooting.md` and `references/deployment-workflow.md`. The answer is almost always a missed step, not a tool bug.
-- **`ntt new` is MANDATORY** before `ntt init`. It clones a git repository that the CLI requires for version resolution (`--latest`), project validation, and contract source management. Substituting with `mkdir` will cause `fatal: not a git repository` or `Run this command from the root of an NTT project` errors.
+Guardian attestations and destination execution can take minutes depending on source chain finality.
 
-### 3. Anti-Hallucination Directive (CRITICAL)
+Rules:
 
-Wormhole's ecosystem is dense and rapidly evolving. **If you do not know the answer to a question about Wormhole CLI flags, SDK methods, contract ABIs, or deployment procedures, you MUST look it up rather than guessing.**
-**Rules:**
+- Design UX and automation around eventual completion.
+- Treat temporary "vaa not found" or waiting states as expected until finality.
+- Implement retry/backoff for RPC and guardian polling, especially on 429s.
 
-- **NEVER fabricate** CLI flags, function signatures, contract methods, or configuration fields. If unsure, consult the dynamic docs URLs listed in this skill.
-- **When a command or API behaves unexpectedly:** Fetch the relevant `llms-*.txt` doc from GitHub (see Product Ecosystem Overview) and search for the specific command/method.
-- **Fallback chain for unknowns:** (1) Re-read the local `references/` files in this skill → (2) If an MCP documentation server is available, query it for `wormhole-foundation/wormhole-docs` or `wormhole-foundation/wormhole-sdk-ts` → (3) ask the user for clarification. → (4) Only if everything fails errors persists and the users agree to it, fetch the dynamic `llms-*.txt` from GitHub (use `curl` — see Dynamic LLMs Context), or check the documentation directly from the official Wormhole website.
-- **Never modify skill documentation** with unverified information. Only add to the skill docs after confirming the information against official sources.
+### 3. Step-by-step execution discipline
 
-## Multi-Chain Deployment Principles
+Cross-chain workflows are order-dependent. Skipping prerequisites causes cascading failures.
 
-When guiding a user through building a multi-chain application, apply these overarching principles:
+Rules:
 
-### 1. Smart Contract Strategy (Protocol Layer)
+- Follow runbooks in order for the selected product.
+- Do not improvise workaround commands when a documented step fails.
+- Reconcile local config with on-chain state before retrying.
 
-- **Token Supremacy:** Wormhole does not create tokens; it moves them. The user's underlying ERC20/SPL tokens must be structurally ready for bridging (i.e. explicitly granting Mint/Burn permissions to the NTT Manager, or relying on locked liquidity pools).
-- **Data Serialization:** Any custom cross-chain data (VAAs) must have mathematically identical byte-layouts on all connected chains, otherwise serialization fails silently across network boundaries.
+### 4. Anti-hallucination directive
 
-### 2. Frontend Integration (Application Layer)
+If a command, flag, API signature, or contract behavior is uncertain, look it up first.
 
-- **Asynchronous UX:** The biggest hurdle in multi-chain apps is User Experience during finality delays. Frontends must cleanly communicate to the user that a transaction has submitted, but might take 15 minutes to be verified by Guardians before it can be claimed on the destination.
-- **Graceful Retries:** Always anticipate `429 Rate Limit` errors when polling Guardian nodes via the SDK. Applications must implement exponential backoff rather than crashing.
+Rules:
 
-### 3. Deployment Operations (Infrastructure Layer)
+- Never fabricate CLI flags, function signatures, or config fields.
+- Use local references first, then official docs pages, then dynamic `llms.txt` context.
+- Keep assumptions explicit when behavior differs by chain family (EVM/SVM/Sui).
 
-- **Configuration Parity:** The `deployment.json` file is the master state. Sibling chains must constantly sync their awareness of each other via `ntt pull` before new transfers are tested.
-- **Testnet Volatility:** Assume testnet deployments will drop transactions. Guide users to rely on explicit gas multipliers (`--gas-estimate-multiplier`) and manual nonce-overrides instead of typical local-development foundry flags.
+### 5. Secrets handling
+
+- Never hardcode private keys, RPC URLs, or API keys in source.
+- Use environment variables and secure secret managers.
+- If a quick test needs inline secrets, label it unsafe and temporary.
 
 ## How to Use
 
-### Mandatory Execution Order
+### Standard execution order (all products)
 
-When executing an NTT deployment, you MUST follow these phases **in exact order**. Do not skip ahead.
+1. Identify target product and chain set from user goal.
+2. Read product overview docs and relevant local references.
+3. Implement the minimum working path first.
+4. Validate with end-to-end checks and failure-path checks.
+5. Add observability and recovery steps before production rollout.
 
-1. **Read** `references/deployment-workflow.md` — follow it step-by-step as your primary runbook.
-2. **Read** `references/troubleshooting.md` — internalize the gotchas BEFORE starting, not after failing.
-3. **Consult** the dynamic `llms.txt` URL for your product (see Product Ecosystem Overview) to verify versions ONLY after failing for version mismatches and hallucinations.
-4. **Execute** the workflow steps sequentially. If a step fails, re-read the reference docs before attempting any fix.
-5. **Validate** using `references/testing-guide.md` after deployment completes.
+### NTT specialization (current deepest local coverage)
 
-### Dynamic LLMs Context
+When the task is NTT deployment/operations, follow this exact order:
 
-If your task does not clearly fall into one of the 5 products listed above, consult the master index `llms.txt` to find the correct domain:
+1. Read `references/deployment-workflow.md`.
+2. Read `references/troubleshooting.md` before running commands.
+3. Execute commands sequentially; do not skip setup steps.
+4. Validate with `references/testing-guide.md`.
 
-- **General Token Bridge:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-token-bridge.txt`
-- **Full Ecosystem Master Index:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms.txt`
+NTT-specific non-negotiables:
 
-> **IMPORTANT: Fetching large `.txt` files.** The `llms-*.txt` files are very large (100KB–500KB+ of plain text). Standard URL-reading tools will silently truncate or mangle them. **Always use `curl` via the terminal** to download and read these files:
->
-> ```bash
-> # Download to a temp file, then read/search it
-> curl -sL "https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-ntt.txt" > /tmp/llms-ntt.txt
-> grep -i "your search term" /tmp/llms-ntt.txt
-> ```
+- `ntt new` is mandatory before `ntt init`.
+- Run `ntt pull` to sync local state before transfer tests.
+- Configure non-zero rate limits and correct decimals.
+- For EVM burning mode, ensure manager mint permissions are granted.
 
-**CRITICAL** Do not load the llms files as context as a first OPTION. Always attempt to answer from your existing knowledge first, then consult the llms files to verify version numbers, command flags, or function signatures if you encounter a recurrent error.
+## Dynamic LLMs Context
 
-**CRITICAL** Always check the files where the implementation was executed, check for type errors, incorrect calls, wrong parameters and make sure the implementation is tested before proceeding.
+Use dynamic docs only when local references and standard docs are not enough, or when verifying exact signatures/version behavior.
 
-**CRITICAL** NEVER place secrets values like private keys, RPC URLs, or API keys directly in the code. Always use environment variables and reference them securely in your configuration, if not possible notify the user that this an unsafe implementation and should used only as testing purposes.
+- Messaging/Relayers: `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-relayers.txt`
+- Token Transfers: `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-token-transfers.txt`
+- NTT: `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-ntt.txt`
+- CCTP: `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-cctp.txt`
+- Connect: `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-connect.txt`
+- Settlement: `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-settlement.txt`
+- TypeScript SDK: `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-typescript-sdk.txt`
+- Master index: `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms.txt`
 
-### Local Reference Files
+For large `llms-*.txt` files, use `curl` from terminal:
 
-Read the following reference files for step-by-step instructions, troubleshooting details, and code examples:
-
+```bash
+curl -sL "https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-ntt.txt" > /tmp/llms-ntt.txt
+grep -i "search term" /tmp/llms-ntt.txt
 ```
-references/deployment-workflow.md  # Step-by-step chain deployment (PRIMARY RUNBOOK)
-references/testing-guide.md        # E2E testing procedures and balance checks
-references/cli-commands.md         # Full command and flag reference
-references/troubleshooting.md      # Detailed gotchas and manual VAA claiming
-references/local-development.md    # Environment variables, deployment.json schema, and bun testing apps
-references/connect-integration.md  # Wormhole Connect widget setup with NTT routes
+
+## Local Reference Files
+
+Current local references are strongest for NTT and Connect implementation:
+
+```text
+references/deployment-workflow.md  # NTT deployment runbook
+references/testing-guide.md        # E2E testing and balance checks
+references/cli-commands.md         # NTT CLI command reference
+references/troubleshooting.md      # Recovery and manual claim patterns
+references/local-development.md    # Environment/config details
+references/connect-integration.md  # Connect + NTT configuration
 ```
 
-### MCP Documentation Server Fallback
+## Fallback Strategy for Unknowns
 
-If the local `references/` files and the GitHub `llms-*.txt` files do not cover your question, and you have access to an MCP documentation server, use it as a secondary lookup by querying for:
+When documentation is insufficient:
 
-- **Docs:** `wormhole-foundation/wormhole-docs`
-- **SDK:** `wormhole-foundation/wormhole-sdk-ts`
+1. Re-read local `references/` docs.
+2. Check official Wormhole product docs pages.
+3. Use dynamic `llms.txt` files for exact signatures/flags.
+4. If available, query MCP doc sources (`wormhole-foundation/wormhole-docs`, `wormhole-foundation/wormhole-sdk-ts`).
+5. Ask the user for missing project-specific constraints.
 
 ## Core Concepts Background
 
-- **Deployment Models:** Hub-and-Spoke (hub locks, spoke burns) or Burn-and-Mint (all burn).
-- **Architecture:** NttManager controls limits/verification; Transceivers route messages.
-- **Token Compatibility:** NTT calls `mint(address, uint256)` on the host token. The token owner grants permission via `grantRole(MINTER_ROLE, address)` or `setMinter(address)`.
-- **Bun Environment:** Use `bun run cli/src/index.ts` for local development instead of `ntt`. Auto-loads `.env` from cwd.
+- Wormhole interoperability is asynchronous; attestations and destination execution are separate stages.
+- Product choice is architecture: token movement, message movement, and UI strategy are different decisions.
+- Cross-chain reliability depends on state parity, retries, and explicit recovery paths.
+- For local CLI development inside Wormhole monorepo workflows, use Bun and keep env/config close to `deployment.json`.
