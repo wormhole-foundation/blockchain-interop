@@ -61,6 +61,35 @@ Evaluate every Wormhole integration through the lens of these four architectural
 | **Deployment Operations**    | Multi-Environment Control | CLI & Configuration      | Managing environment variables, orchestrating `ntt push` across testnets, defining rate limits in `deployment.json`.                           |
 | **Observability & Finality** | Network States            | Verifiable VAAs          | Designing applications to handle asynchronous block finality (15+ min delays) and providing elegant VAA retry mechanisms for failed transfers. |
 
+## Universal Ecosystem Constraints
+
+### 1. Strict Version Parity (CRITICAL)
+
+Wormhole's architecture—spanning the `ntt` CLI, Smart Contracts, Connect React widgets, and the TypeScript SDKs—relies on strict internal compatibility. **Mismatches across any Wormhole ecosystem components will cause fatal, often silent bugs** (e.g., singleton registry collisions in TypeScript yielding `No protocols registered`, unsupported VAA payload layouts, React hydration crashes, or incompatible contract ABIs).
+**Rule:** When implementing ANY Wormhole product, an agent MUST consult the dynamic official documentation URLs provided in this skill to verify the current **CAUTION** ONLY after failing do to an implementation, check officially supported version matrix. Never guess version bounds; always prioritize the official documentation’s version recommendations to ensure perfect ecosystem alignment and avoid mixing incompatible generations.
+
+**SDK NTT Plugin Versioning:** The `@wormhole-foundation/sdk-evm-ntt` package is versioned independently from the core `@wormhole-foundation/sdk`. Always install both together and verify they are compatible—version mismatches cause silent `No protocols registered` errors at runtime because the NTT protocol handler fails to register with the SDK’s singleton registry.
+
+### 2. Step-by-Step Execution Discipline (CRITICAL)
+
+Wormhole CLI commands are **order-dependent**. Each step produces artifacts (git repos, `deployment.json` state, on-chain contracts) that subsequent steps depend on. **Skipping or reordering steps causes cascading failures that look like tool bugs but are actually sequencing errors.**
+**Rules:**
+
+- **NEVER improvise CLI commands.** Always follow `references/deployment-workflow.md` in exact sequential order.
+- **NEVER invent workarounds** (e.g., `git init`, `mkdir`, `--local`) when a command fails. Instead, re-read the relevant reference file to identify which prerequisite step was missed.
+- **When ANY command fails:** Stop. Re-read `references/troubleshooting.md` and `references/deployment-workflow.md`. The answer is almost always a missed step, not a tool bug.
+- **`ntt new` is MANDATORY** before `ntt init`. It clones a git repository that the CLI requires for version resolution (`--latest`), project validation, and contract source management. Substituting with `mkdir` will cause `fatal: not a git repository` or `Run this command from the root of an NTT project` errors.
+
+### 3. Anti-Hallucination Directive (CRITICAL)
+
+Wormhole's ecosystem is dense and rapidly evolving. **If you do not know the answer to a question about Wormhole CLI flags, SDK methods, contract ABIs, or deployment procedures, you MUST look it up rather than guessing.**
+**Rules:**
+
+- **NEVER fabricate** CLI flags, function signatures, contract methods, or configuration fields. If unsure, consult the dynamic docs URLs listed in this skill.
+- **When a command or API behaves unexpectedly:** Fetch the relevant `llms-*.txt` doc from GitHub (see Product Ecosystem Overview) and search for the specific command/method.
+- **Fallback chain for unknowns:** (1) Re-read the local `references/` files in this skill → (2) If an MCP documentation server is available, query it for `wormhole-foundation/wormhole-docs` or `wormhole-foundation/wormhole-sdk-ts` → (3) ask the user for clarification. → (4) Only if everything fails errors persists and the users agree to it, fetch the dynamic `llms-*.txt` from GitHub (use `curl` — see Dynamic LLMs Context), or check the documentation directly from the official Wormhole website.
+- **Never modify skill documentation** with unverified information. Only add to the skill docs after confirming the information against official sources.
+
 ## Multi-Chain Deployment Principles
 
 When guiding a user through building a multi-chain application, apply these overarching principles:
@@ -82,6 +111,16 @@ When guiding a user through building a multi-chain application, apply these over
 
 ## How to Use
 
+### Mandatory Execution Order
+
+When executing an NTT deployment, you MUST follow these phases **in exact order**. Do not skip ahead.
+
+1. **Read** `references/deployment-workflow.md` — follow it step-by-step as your primary runbook.
+2. **Read** `references/troubleshooting.md` — internalize the gotchas BEFORE starting, not after failing.
+3. **Consult** the dynamic `llms.txt` URL for your product (see Product Ecosystem Overview) to verify versions ONLY after failing for version mismatches and hallucinations.
+4. **Execute** the workflow steps sequentially. If a step fails, re-read the reference docs before attempting any fix.
+5. **Validate** using `references/testing-guide.md` after deployment completes.
+
 ### Dynamic LLMs Context
 
 If your task does not clearly fall into one of the 5 products listed above, consult the master index `llms.txt` to find the correct domain:
@@ -89,17 +128,39 @@ If your task does not clearly fall into one of the 5 products listed above, cons
 - **General Token Bridge:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-token-bridge.txt`
 - **Full Ecosystem Master Index:** `https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms.txt`
 
+> **IMPORTANT: Fetching large `.txt` files.** The `llms-*.txt` files are very large (100KB–500KB+ of plain text). Standard URL-reading tools will silently truncate or mangle them. **Always use `curl` via the terminal** to download and read these files:
+>
+> ```bash
+> # Download to a temp file, then read/search it
+> curl -sL "https://raw.githubusercontent.com/wormhole-foundation/wormhole-docs/main/llms-files/llms-ntt.txt" > /tmp/llms-ntt.txt
+> grep -i "your search term" /tmp/llms-ntt.txt
+> ```
+
+**CRITICAL** Do not load the llms files as context as a first OPTION. Always attempt to answer from your existing knowledge first, then consult the llms files to verify version numbers, command flags, or function signatures if you encounter a recurrent error.
+
+**CRITICAL** Always check the files where the implementation was executed, check for type errors, incorrect calls, wrong parameters and make sure the implementation is tested before proceeding.
+
+**CRITICAL** NEVER place secrets values like private keys, RPC URLs, or API keys directly in the code. Always use environment variables and reference them securely in your configuration, if not possible notify the user that this an unsafe implementation and should used only as testing purposes.
+
 ### Local Reference Files
 
 Read the following reference files for step-by-step instructions, troubleshooting details, and code examples:
 
 ```
-references/deployment-workflow.md  # Step-by-step chain deployment
+references/deployment-workflow.md  # Step-by-step chain deployment (PRIMARY RUNBOOK)
 references/testing-guide.md        # E2E testing procedures and balance checks
 references/cli-commands.md         # Full command and flag reference
 references/troubleshooting.md      # Detailed gotchas and manual VAA claiming
 references/local-development.md    # Environment variables, deployment.json schema, and bun testing apps
+references/connect-integration.md  # Wormhole Connect widget setup with NTT routes
 ```
+
+### MCP Documentation Server Fallback
+
+If the local `references/` files and the GitHub `llms-*.txt` files do not cover your question, and you have access to an MCP documentation server, use it as a secondary lookup by querying for:
+
+- **Docs:** `wormhole-foundation/wormhole-docs`
+- **SDK:** `wormhole-foundation/wormhole-sdk-ts`
 
 ## Core Concepts Background
 

@@ -2,59 +2,61 @@
 
 ## Project Setup
 
-| Command | Description | Flags |
-|---------|-------------|-------|
-| `ntt new <path>` | Create new NTT project directory | |
-| `ntt init <network>` | Initialize deployment.json | `Testnet` or `Mainnet` |
-| `ntt update` | Update NTT CLI | `--branch <name>`, `--path <local-path>` |
+| Command              | Description                      | Flags                                    |
+| -------------------- | -------------------------------- | ---------------------------------------- |
+| `ntt new <path>`     | Create new NTT project directory |                                          |
+| `ntt init <network>` | Initialize deployment.json       | `Testnet` or `Mainnet`                   |
+| `ntt update`         | Update NTT CLI                   | `--branch <name>`, `--path <local-path>` |
 
 ## Deployment
 
-| Command | Description | Key Flags |
-|---------|-------------|-----------|
-| `ntt add-chain <chain>` | Deploy NTT to a chain | `--latest`, `--mode burning\|locking`, `--token <addr>`, `--skip-verify`, `--ver <version>`, `--local` |
-| `ntt push` | Push local config changes on-chain | `--payer <keypair>` (SVM), `--yes` |
-| `ntt pull` | Pull on-chain config to local | |
-| `ntt status` | Verify deployment matches on-chain | |
-| `ntt upgrade <chain>` | Upgrade contract on chain | `--ver <version>`, `--latest` |
-| `ntt clone <network> <chain> <address>` | Init from existing contract | |
+| Command                                 | Description                        | Key Flags                                                                                              |
+| --------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `ntt add-chain <chain>`                 | Deploy NTT to a chain              | `--latest`, `--mode burning\|locking`, `--token <addr>`, `--skip-verify`, `--ver <version>`, `--local` |
+| `ntt push`                              | Push local config changes on-chain | `--payer <keypair>` (SVM), `--yes`                                                                     |
+| `ntt pull`                              | Pull on-chain config to local      |                                                                                                        |
+| `ntt status`                            | Verify deployment matches on-chain |                                                                                                        |
+| `ntt upgrade <chain>`                   | Upgrade contract on chain          | `--ver <version>`, `--latest`                                                                          |
+| `ntt clone <network> <chain> <address>` | Init from existing contract        |                                                                                                        |
 
 ## Token Operations
 
-| Command | Description | Key Flags |
-|---------|-------------|-----------|
-| `ntt token-transfer` | Transfer tokens cross-chain | `--network`, `--source-chain`, `--destination-chain`, `--amount`, `--destination-address`, `--deployment-path` |
-| `ntt set-mint-authority` | Set mint authority to NTT Manager | `--chain`, `--token`, `--manager`, `--payer` |
-| `ntt transfer-ownership <chain>` | Transfer NTT manager ownership | `--destination <addr>` |
+| Command                          | Description                       | Key Flags                                                                                                      |
+| -------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ntt token-transfer`             | Transfer tokens cross-chain       | `--network`, `--source-chain`, `--destination-chain`, `--amount`, `--destination-address`, `--deployment-path` |
+| `ntt set-mint-authority`         | Set mint authority to NTT Manager | `--chain`, `--token`, `--manager`, `--payer`                                                                   |
+| `ntt transfer-ownership <chain>` | Transfer NTT manager ownership    | `--destination <addr>`                                                                                         |
 
 ## Configuration
 
-| Command | Description |
-|---------|-------------|
-| `ntt config set-chain <chain> <key>` | Set config value |
+| Command                                | Description         |
+| -------------------------------------- | ------------------- |
+| `ntt config set-chain <chain> <key>`   | Set config value    |
 | `ntt config unset-chain <chain> <key>` | Remove config value |
-| `ntt config get-chain <chain> <key>` | Get config value |
+| `ntt config get-chain <chain> <key>`   | Get config value    |
 
 ## Solana Subcommands
 
-| Command | Description |
-|---------|-------------|
-| `ntt solana key-base58 <keypair>` | Print private key in base58 |
-| `ntt solana token-authority <programId>` | Print token authority address |
-| `ntt solana ata <mint> <owner> <tokenProgram>` | Print ATA address |
-| `ntt solana create-spl-multisig` | Create SPL multisig |
-| `ntt solana build` | Build Solana program |
+| Command                                        | Description                   |
+| ---------------------------------------------- | ----------------------------- |
+| `ntt solana key-base58 <keypair>`              | Print private key in base58   |
+| `ntt solana token-authority <programId>`       | Print token authority address |
+| `ntt solana ata <mint> <owner> <tokenProgram>` | Print ATA address             |
+| `ntt solana create-spl-multisig`               | Create SPL multisig           |
+| `ntt solana build`                             | Build Solana program          |
 
 ## Chain Names
 
 ### Testnet
+
 Wormhole supports a vast array of testnets. Some common ones include:
 EVM: Sepolia, BaseSepolia, ArbitrumSepolia, OptimismSepolia, Holesky, Bsc, Linea, Fuji
 SVM: Solana (uses devnet)
 Sui: Sui (uses testnet)
-*Tip: To see the full list of supported networks, look at the auto-complete options printed by `ntt add-chain --help`.*
+_Tip: To see the full list of supported networks, look at the auto-complete options printed by `ntt add-chain --help`._
 
 ### Mainnet
+
 EVM: Ethereum, Base, Arbitrum, Optimism, Polygon, Avalanche, Bsc, Fantom, Celo, Moonbeam, etc.
 SVM: Solana
 Sui: Sui
@@ -79,10 +81,10 @@ SUI_PRIVATE_KEY=...
 
 ```json
 {
-  "chains": {
-    "Sepolia": { "rpc": "https://custom-rpc.example.com" },
-    "Solana": { "rpc": "https://custom-solana-rpc.example.com" }
-  }
+    "chains": {
+        "Sepolia": { "rpc": "https://custom-rpc.example.com" },
+        "Solana": { "rpc": "https://custom-solana-rpc.example.com" }
+    }
 }
 ```
 
@@ -90,8 +92,8 @@ SUI_PRIVATE_KEY=...
 
 How these CLI commands map to your full project integration:
 
-| Lifecycle Phase | Primary CLI Commands | Action |
-|-----------------|-----------------------|--------|
-| **1. Deploy** | `ntt add-chain`, `ntt push`, `cast send setMinter` | Configure and permission the smart contracts across chains. |
-| **2. Transfer** | `ntt token-transfer`, `ntt pull` | Verify the bridge routes and rate limits work via terminal. |
-| **3. Implement** | *No CLI Command* | Parse the generated `deployment.json` addresses and pass them to the frontend TypeScript `@wormhole-foundation/sdk` or Connect UI widgets. |
+| Lifecycle Phase  | Primary CLI Commands                               | Action                                                                                                                                     |
+| ---------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **1. Deploy**    | `ntt add-chain`, `ntt push`, `cast send setMinter` | Configure and permission the smart contracts across chains.                                                                                |
+| **2. Transfer**  | `ntt token-transfer`, `ntt pull`                   | Verify the bridge routes and rate limits work via terminal.                                                                                |
+| **3. Implement** | _No CLI Command_                                   | Parse the generated `deployment.json` addresses and pass them to the frontend TypeScript `@wormhole-foundation/sdk` or Connect UI widgets. |

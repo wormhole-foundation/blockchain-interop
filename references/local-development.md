@@ -46,12 +46,14 @@ The `deployment.json` file is the source of truth for the local CLI.
 When developing the NTT CLI locally (inside the `wormhole` repository), you must use Bun directly instead of the global `ntt` binary to ensure you are executing the local codebase.
 
 ### Running CLI logic
+
 ```bash
 bun run cli/src/index.ts <command> [args]
 bun run cli/src/index.ts add-chain --help
 ```
 
 ### Running Tests
+
 ```bash
 bun test cli/src/__tests__/                  # Run all tests (from project root!)
 bun run --cwd cli typecheck                  # TypeScript check

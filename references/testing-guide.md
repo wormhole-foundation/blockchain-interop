@@ -93,20 +93,21 @@ On Anvil forks there's no real Wormhole Guardian network, so VAAs must be manual
 ### Phase 3: Transfer Test
 
 1. Mint test tokens if needed:
-   ```bash
-   cast send $TOKEN_ADDRESS "mint(address,uint256)" $USER_ADDRESS 1000000000000000000 \
-       --private-key $ETH_PRIVATE_KEY --rpc-url $RPC_URL
-   ```
+    ```bash
+    cast send $TOKEN_ADDRESS "mint(address,uint256)" $USER_ADDRESS 1000000000000000000 \
+        --private-key $ETH_PRIVATE_KEY --rpc-url $RPC_URL
+    ```
 2. Execute token-transfer from Sepolia to Base Sepolia
 3. Verify transfer completes (may take several minutes for Guardian attestation)
 4. Verify token balance on destination chain:
-   ```bash
-   cast call $TOKEN_ADDRESS "balanceOf(address)(uint256)" $USER_ADDRESS --rpc-url $RPC_URL
-   ```
+    ```bash
+    cast call $TOKEN_ADDRESS "balanceOf(address)(uint256)" $USER_ADDRESS --rpc-url $RPC_URL
+    ```
 
 ### Phase 4: Frontend SDK Test (Implement Protocol)
 
 The final step of the End-to-End lifecycle is ensuring the newly deployed protocol interacts correctly with the frontend.
+
 1. Write a small TypeScript script using the `@wormhole-foundation/sdk` to perform a `TokenTransfer`.
 2. Monitor the Guardian RPC polling mechanisms in your frontend logs to ensure you are not hitting `429 Rate Limit` errors.
 3. Verify that any VAA parsing or manual UI claim logic respects the layout serialization limits discussed in the Troubleshooting guide.

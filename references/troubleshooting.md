@@ -15,6 +15,21 @@ This document contains detailed troubleshooting steps, edge cases, and manual re
 9. **Wallet Ownership Mismatch:** Operations like `ntt manual set-peer` will fail with authorization or gas errors if the loaded `ETH_PRIVATE_KEY` does not match the manager's current owner or lacks native gas tokens. Verify with `cast wallet address`.
 10. **Locking Mode Allowance:** When `mode` is `locking`, the sender's wallet MUST call `approve()` on the Token contract to grant the `NttManager` allowance before a transfer can succeed.
 11. **Locking Mode Liquidity:** If a transaction succeeds on the source chain but reverts on the destination chain during a `locking` transfer, verify the destination `NttManager` contract actually holds a sufficient balance of the token to release to the receiver.
+12. **`Run this command from the root of an NTT project`:** This error means you did NOT use `ntt new` to create the project directory. The CLI validates that the cwd is a proper NTT git clone. You cannot substitute `mkdir` + `ntt init`. You must use `ntt new <name>` first, then `cd <name>`, then `ntt init Testnet`.
+13. **`fatal: not a git repository` on `--latest`:** Same root cause as #12. The `--latest` flag runs `git tag` internally to resolve versions. This only works inside a directory created by `ntt new` (which is a git clone). Fix: use `ntt new` properly.
+14. **Forge simulation fails with `NotActivated` / `StaticcallFailed` during `ntt add-chain`:** This is expected behavior on testnets. Foundry's simulation environment cannot reach the token contract's `decimals()` via static call in the simulated EVM. The CLI will ask whether to proceed without simulation — answering "yes" is safe. The actual on-chain deployment works correctly. This is not a bug in the CLI or in the token contract.
+15. **Token minting interface varies across projects:** Before granting minter permissions, verify which pattern the token uses. NTT's NttManager needs permission to call `mint(address,uint256)`. The two common patterns are: (a) **OpenZeppelin AccessControl** — token exposes `MINTER_ROLE()` and permissions are granted via `grantRole(bytes32,address)`, and (b) **Ownable / custom** — token has `owner()` and permissions are granted via `setMinter(address)` or similar. Check with `cast call $TOKEN "MINTER_ROLE()(bytes32)"` first — if it reverts, try `cast call $TOKEN "owner()(address)"` to determine the pattern. Using the wrong grant method will silently fail and transfers will revert with no clear error.
+
+## Error Recovery Protocol
+
+When ANY CLI command fails, follow this protocol **before** attempting any fix:
+
+1. **Stop.** Do not improvise workarounds (`git init`, `--local`, manual `mkdir`).
+2. **Re-read** `deployment-workflow.md` to verify you followed every step in order.
+3. **Re-read** this troubleshooting file to check if the error matches a known gotcha.
+4. **Only then** attempt a fix based on what the docs say.
+
+The most common failure mode is skipping a prerequisite step, not a tool bug.
 
 ## VAA Finality Delays
 
@@ -52,55 +67,55 @@ cast send $DESTINATION_TRANSCEIVER "receiveMessage(bytes)" $RAW_VAA_HEXBYTES \
     --private-key $ETH_PRIVATE_KEY --rpc-url $DESTINATION_RPC_URL
 ```
 
-*Note: The Transceiver will verify the VAA with the Core Bridge and forward it to the NttManager to complete the token mint/unlock.*
+_Note: The Transceiver will verify the VAA with the Core Bridge and forward it to the NttManager to complete the token mint/unlock._
 
 ### Approach B: Frontend SDK (TypeScript)
 
 If you are building a dApp or need to programmatically claim the VAA using the `@wormhole-foundation/sdk`, use the `completeTransfer` method which abstracts the VAA fetching and contract calls.
 
 ```typescript
-import { wormhole, signSendWait } from "@wormhole-foundation/sdk";
-import evmLoader from "@wormhole-foundation/sdk/evm";
-import "@wormhole-foundation/sdk-evm-ntt"; // Register the NTT plugin
+import { wormhole, signSendWait } from '@wormhole-foundation/sdk';
+import evmLoader from '@wormhole-foundation/sdk/evm';
+import '@wormhole-foundation/sdk-evm-ntt'; // Register the NTT plugin
 
 async function manuallyClaimVAA() {
-  // Initialize Wormhole for Testnet, loading EVM protocol support
-  const wh = await wormhole("Testnet", [evmLoader]);
+    // Initialize Wormhole for Testnet, loading EVM protocol support
+    const wh = await wormhole('Testnet', [evmLoader]);
 
-  // 1. Setup destination signer
-  const dstChain = wh.getChain("BaseSepolia"); // Replace with your target chain
-  
-  // NOTE: You must provide your own destination chain Signer implementation
-  // const destSigner = await getSigner(dstChain); 
+    // 1. Setup destination signer
+    const dstChain = wh.getChain('BaseSepolia'); // Replace with your target chain
 
-  // 2. Fetch the transfer details using the exact TxHash from the source chain
-  const sourceTxHash = "0xYourSourceTransactionHash...";
-  
-  // Fetch the VAA directly from the network
-  // Native Token Transfers use the "Ntt:WormholeTransfer" payload type
-  console.log("Fetching VAA from Guardian Network...");
-  const vaa = await wh.getVaa(
-    sourceTxHash,
-    "Ntt:WormholeTransfer",
-    15 * 60 * 1000 // 15 minute timeout for finality
-  );
+    // NOTE: You must provide your own destination chain Signer implementation
+    // const destSigner = await getSigner(dstChain);
 
-  // 3. Initialize the NTT Protocol on the destination chain
-  const dstNtt = await dstChain.getProtocol("Ntt", {
-    ntt: {
-      manager: "0xYourNttManagerAddress...", // From deployment.json
-      token: "0xYourTokenAddress...",        // From deployment.json
-    },
-  });
+    // 2. Fetch the transfer details using the exact TxHash from the source chain
+    const sourceTxHash = '0xYourSourceTransactionHash...';
 
-  // 4. Complete the transfer on the destination chain
-  console.log("Submitting VAA to destination contract...");
-  const txreceipt = await signSendWait(
-    dstChain,
-    dstNtt.redeem([vaa!], destSigner.address.address),
-    destSigner.signer
-  );
-  console.log("Claim Successful:", txreceipt);
+    // Fetch the VAA directly from the network
+    // Native Token Transfers use the "Ntt:WormholeTransfer" payload type
+    console.log('Fetching VAA from Guardian Network...');
+    const vaa = await wh.getVaa(
+        sourceTxHash,
+        'Ntt:WormholeTransfer',
+        15 * 60 * 1000, // 15 minute timeout for finality
+    );
+
+    // 3. Initialize the NTT Protocol on the destination chain
+    const dstNtt = await dstChain.getProtocol('Ntt', {
+        ntt: {
+            manager: '0xYourNttManagerAddress...', // From deployment.json
+            token: '0xYourTokenAddress...', // From deployment.json
+        },
+    });
+
+    // 4. Complete the transfer on the destination chain
+    console.log('Submitting VAA to destination contract...');
+    const txreceipt = await signSendWait(
+        dstChain,
+        dstNtt.redeem([vaa!], destSigner.address.address),
+        destSigner.signer,
+    );
+    console.log('Claim Successful:', txreceipt);
 }
 
 manuallyClaimVAA().catch(console.error);
@@ -113,3 +128,11 @@ When building a full end-to-end integration using the Wormhole `@wormhole-founda
 1. **Layout Sizing Mismatches:** When defining custom layouts for cross-chain message payloads, the `size` attribute must precisely match the byte length of your data. If you define `{ binary: 'bytes', size: 32 }` but pass 31 bytes, serialization will fail silently or corrupt data.
 2. **Missing Try-Catch on Deserialization:** Always wrap `deserializeLayout` in a `try/catch`. If a maliciously formatted or truncated message arrives on the destination chain, it will crash the relayer/frontend.
 3. **VAA Polling Rate Limits:** When using `wh.getVaa(msgId)` or other modern SDK polling methods, you can hit rate limits (`fetch error 429`) against the Guardian RPCs if you poll too aggressively or if the network is congested. You must wrap your fetching logic in an exponential backoff retry loop to handle `429 Too Many Requests` elegantly, rather than letting the process crash.
+4. **EVM Signer Typing:** Do not cast `ethers.Wallet` as `any` to satisfy `signSendWait()`. Import `evmPlatform` from `@wormhole-foundation/sdk/platforms/evm` and call `evmPlatform.getSigner(rpc, privateKey)` — this returns a properly typed `Signer<N, C>`. Use `ethers.Wallet` only for direct contract interactions (mint, balanceOf) that need an ethers `ContractRunner`.
+5. **Explicit NTT Plugin Registration:** When using `@wormhole-foundation/sdk-evm-ntt`, you must explicitly call `register()` to wire the NTT protocol into the SDK's singleton registry. Without this, `chain.getProtocol("Ntt", ...)` silently returns `undefined` or throws `No protocols registered`. The pattern is:
+    ```typescript
+    import { register as registerEvmNtt } from '@wormhole-foundation/sdk-evm-ntt';
+    import { register as registerNttDefinitions } from '@wormhole-foundation/sdk-definitions-ntt';
+    registerEvmNtt();
+    registerNttDefinitions();
+    ```
