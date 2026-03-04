@@ -181,6 +181,8 @@ references/cli-commands.md         # NTT CLI command reference
 references/troubleshooting.md      # Recovery and manual claim patterns
 references/local-development.md    # Environment/config details
 references/connect-integration.md  # Connect + NTT configuration
+references/governance.md           # Guardian governance ceremonies (upgrades, peer registration)
+references/hyperevm.md             # HyperEVM-specific deployment, verification, and big block mode
 ```
 
 ## Fallback Strategy for Unknowns

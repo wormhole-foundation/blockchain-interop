@@ -155,10 +155,42 @@ Deploying to testnets and mainnets can be flaky. If `ntt push` or `ntt add-chain
 - **Nonce Conflicts & Stuck TXs:** The CLI uses `NonceManager.increment()` which can desync if a transaction drops. You _must_ manually cancel the stuck TX in MetaMask or wait for network drops before retrying `ntt push`.
 - **Partial Deployments:** If a deployment fails halfway through, **do not immediately restart**. Run `ntt status` to see what actually landed on-chain. You might need to manually intervene or cleanly delete the pending state from `.deployments/` before retrying.
 
+## Contract Verification (Etherscan v2)
+
+The old Etherscan v1 API endpoints are deprecated. All EVM contract verification must use the **Etherscan v2 API**.
+
+**Do NOT use `--verify` inline with `forge create`** — it uses the v1 endpoint and will fail with "deprecated V1 endpoint" error. Instead, deploy first, then verify separately:
+
+```bash
+# Deploy (no --verify flag)
+forge create --broadcast --rpc-url $RPC_URL --private-key $ETH_PRIVATE_KEY \
+  <contract_path>:<ContractName>
+
+# Verify separately using Etherscan v2
+forge verify-contract <DEPLOYED_ADDRESS> <contract_path>:<ContractName> \
+  --verifier etherscan \
+  --verifier-url "https://api.etherscan.io/v2/api?chainid=<CHAIN_ID>" \
+  --etherscan-api-key $SCAN_API_KEY \
+  --watch
+```
+
+Common chain IDs: Sepolia=11155111, BaseSepolia=84532, HyperEVM=999, Ethereum=1, Base=8453.
+
+For contracts with constructor args, add:
+```bash
+  --constructor-args $(cast abi-encode "constructor(type1,type2,...)" arg1 arg2 ...)
+```
+
+For contracts with linked libraries, add:
+```bash
+  --libraries src/libraries/Lib.sol:Lib:<LIB_ADDR>
+```
+
 ## Troubleshooting
 
 - **"No protocols registered for Evm"**: Import `@wormhole-foundation/sdk-evm-ntt`
-- **Verification fails**: Use `--skip-verify` flag, verify later manually
+- **"deprecated V1 endpoint"**: Use separate `forge verify-contract` with `--verifier etherscan --verifier-url "https://api.etherscan.io/v2/api?chainid=<ID>"`
+- **Verification fails**: Use `--skip-verify` flag on `ntt add-chain`, verify later manually with `forge verify-contract`
 - **Rate limit stuck**: Ensure limits > 0 before any transfers
 - **Decimals wrong**: Run `ntt pull` to sync decimals from on-chain
 
