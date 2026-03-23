@@ -146,6 +146,46 @@ If using hub-and-spoke instead of burn-and-mint:
 - Hub chain: `--mode locking` (no mint authority needed, standard ERC-20 ok)
 - Spoke chains: `--mode burning` (needs INttToken + mint authority)
 
+## Gas Token (ETH/Native) — WethUnwrap Variant
+
+To bridge the native gas token (e.g. ETH), use WETH as the locked token on the hub chain and deploy with `--manager-variant wethUnwrap`. When tokens arrive back at the hub, the manager automatically unwraps WETH → ETH and sends native ETH to the recipient.
+
+**When to use:** Hub chain only (locking mode). Token must be the WETH contract address on that chain.
+
+**Step 1: Add the hub chain with wethUnwrap variant**
+```bash
+# Ethereum Mainnet WETH: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+ntt add-chain Ethereum --latest --mode locking \
+  --token <WETH_ADDRESS> \
+  --manager-variant wethUnwrap
+```
+
+This stores `"managerVariant": "wethUnwrap"` in `deployment.json`. On `ntt upgrade`, the variant is read automatically — no need to re-pass the flag.
+
+**Step 2: Add spoke chains normally (burning mode)**
+```bash
+ntt add-chain BaseSepolia --latest --mode burning --token <WRAPPED_ETH_TOKEN>
+```
+Spoke chains use their own wrapped/synthetic ETH token. Grant mint authority to the spoke NttManager as usual.
+
+**How it works internally:**
+- Standard NttManager: releases WETH tokens to recipient on unlock
+- WethUnwrap: calls `weth.withdraw(amount)`, then sends native ETH via `payable(recipient).call{value: amount}`
+- The contract has `receive() external payable` to accept ETH from WETH's `withdraw()` callback
+- `NttManagerWethUnwrap` constructor casts `token` to `IWETH` — so the token **must** be the WETH contract
+
+**Requirements:**
+- EVM only (no Solana/Sui equivalent)
+- Requires deploy script version 2+ (all current NTT versions)
+- Locking mode only — burning mode never calls `_unlockTokens`
+- Token must implement the WETH interface (`withdraw(uint256)`)
+
+**Common WETH addresses:**
+- Ethereum Mainnet: `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`
+- Base: `0x4200000000000000000000000000000000000006`
+- Arbitrum One: `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1`
+- Sepolia (testnet): `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14`
+
 ## Handling On-Chain Deployment Failures
 
 Deploying to testnets and mainnets can be flaky. If `ntt push` or `ntt add-chain` hangs or crashes midway:
@@ -155,7 +195,46 @@ Deploying to testnets and mainnets can be flaky. If `ntt push` or `ntt add-chain
 - **Nonce Conflicts & Stuck TXs:** The CLI uses `NonceManager.increment()` which can desync if a transaction drops. You _must_ manually cancel the stuck TX in MetaMask or wait for network drops before retrying `ntt push`.
 - **Partial Deployments:** If a deployment fails halfway through, **do not immediately restart**. Run `ntt status` to see what actually landed on-chain. You might need to manually intervene or cleanly delete the pending state from `.deployments/` before retrying.
 
-## Contract Verification (Etherscan v2)
+## Contract Verification
+
+### NTT CLI Per-Chain Verifier Configuration
+
+The CLI supports per-chain verifier settings via `ntt config set-chain`. This controls how `ntt add-chain` verifies contracts during deployment. Config keys:
+
+- `verifier` — verifier type: `etherscan` (default), `sourcify`, or `blockscout`
+- `verifier_url` — custom verifier API URL (required for `sourcify` and `blockscout`)
+- `scan_api_key` — Etherscan API key (also read from `<CHAIN>_SCAN_API_KEY` env var)
+
+```bash
+ntt config set-chain <Chain> verifier <type>
+ntt config set-chain <Chain> verifier_url <url>
+```
+
+Well-known chains (Ethereum, Base, Arbitrum, Optimism, BSC) work with the default `etherscan` verifier — just set the `<CHAIN>_SCAN_API_KEY` env var.
+
+### Chains Requiring Custom Verifier Config
+
+**Monad** (chain ID 143) — use Sourcify via BlockVision:
+```bash
+ntt config set-chain Monad verifier sourcify
+ntt config set-chain Monad verifier_url https://sourcify-api-monad.blockvision.org/
+```
+
+**MegaETH** (chain ID 4326) — use Etherscan v2 with explicit URL:
+```bash
+ntt config set-chain MegaETH verifier etherscan
+ntt config set-chain MegaETH verifier_url "https://api.etherscan.io/v2/api?chainid=4326"
+```
+
+**HyperEVM** (chain ID 999) — use Sourcify:
+```bash
+ntt config set-chain HyperEVM verifier sourcify
+ntt config set-chain HyperEVM verifier_url https://sourcify.dev/server/
+```
+
+Set these **before** running `ntt add-chain` so verification happens automatically during deployment.
+
+### Manual Verification (Etherscan v2)
 
 The old Etherscan v1 API endpoints are deprecated. All EVM contract verification must use the **Etherscan v2 API**.
 
@@ -174,9 +253,20 @@ forge verify-contract <DEPLOYED_ADDRESS> <contract_path>:<ContractName> \
   --watch
 ```
 
-Common chain IDs: Sepolia=11155111, BaseSepolia=84532, HyperEVM=999, Ethereum=1, Base=8453.
+### Manual Verification (Sourcify — e.g., Monad)
 
-For contracts with constructor args, add:
+```bash
+forge verify-contract <DEPLOYED_ADDRESS> <contract_path>:<ContractName> \
+  --chain <EVM_CHAIN_ID> \
+  --verifier sourcify \
+  --verifier-url https://sourcify-api-monad.blockvision.org/
+```
+
+No API key needed for Sourcify. No `--constructor-args` needed — Sourcify resolves them automatically.
+
+Common chain IDs: Sepolia=11155111, BaseSepolia=84532, HyperEVM=999, Ethereum=1, Base=8453, Monad=143, MegaETH=4326.
+
+For contracts with constructor args (Etherscan only), add:
 ```bash
   --constructor-args $(cast abi-encode "constructor(type1,type2,...)" arg1 arg2 ...)
 ```
@@ -190,6 +280,7 @@ For contracts with linked libraries, add:
 
 - **"No protocols registered for Evm"**: Import `@wormhole-foundation/sdk-evm-ntt`
 - **"deprecated V1 endpoint"**: Use separate `forge verify-contract` with `--verifier etherscan --verifier-url "https://api.etherscan.io/v2/api?chainid=<ID>"`
+- **"No known Etherscan API URL for chain X"**: Chain not in forge's built-in registry. Use `--verifier-url` explicitly, or configure via `ntt config set-chain`
 - **Verification fails**: Use `--skip-verify` flag on `ntt add-chain`, verify later manually with `forge verify-contract`
 - **Rate limit stuck**: Ensure limits > 0 before any transfers
 - **Decimals wrong**: Run `ntt pull` to sync decimals from on-chain

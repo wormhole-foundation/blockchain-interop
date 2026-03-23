@@ -10,14 +10,14 @@
 
 ## Deployment
 
-| Command                                 | Description                        | Key Flags                                                                                              |
-| --------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `ntt add-chain <chain>`                 | Deploy NTT to a chain              | `--latest`, `--mode burning\|locking`, `--token <addr>`, `--skip-verify`, `--ver <version>`, `--local` |
-| `ntt push`                              | Push local config changes on-chain | `--payer <keypair>` (SVM), `--yes`                                                                     |
-| `ntt pull`                              | Pull on-chain config to local      |                                                                                                        |
-| `ntt status`                            | Verify deployment matches on-chain |                                                                                                        |
-| `ntt upgrade <chain>`                   | Upgrade contract on chain          | `--ver <version>`, `--latest`                                                                          |
-| `ntt clone <network> <chain> <address>` | Init from existing contract        |                                                                                                        |
+| Command                                 | Description                        | Key Flags                                                                                                                                                                   |
+| --------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ntt add-chain <chain>`                 | Deploy NTT to a chain              | `--latest`, `--mode burning\|locking`, `--token <addr>`, `--skip-verify`, `--ver <version>`, `--local`, `--manager-variant standard\|noRateLimiting\|wethUnwrap` (EVM only) |
+| `ntt push`                              | Push local config changes on-chain | `--payer <keypair>` (SVM), `--yes`                                                                                                                                          |
+| `ntt pull`                              | Pull on-chain config to local      |                                                                                                                                                                             |
+| `ntt status`                            | Verify deployment matches on-chain |                                                                                                                                                                             |
+| `ntt upgrade <chain>`                   | Upgrade contract on chain          | `--ver <version>`, `--latest`                                                                                                                                               |
+| `ntt clone <network> <chain> <address>` | Init from existing contract        |                                                                                                                                                                             |
 
 ## Token Operations
 

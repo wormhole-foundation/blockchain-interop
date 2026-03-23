@@ -64,6 +64,12 @@ Map user intent to product first, then implement:
 - "Need remote chain reads" -> Queries
 - "Need governance over many chains" -> MultiGov
 
+See `references/cli-commands.md` for full command reference.
+See `references/deployment-workflow.md` for step-by-step deployment.
+See `references/testing-guide.md` for E2E testing procedures.
+See `references/governance.md` for guardian governance ceremonies (upgrades, peer registration).
+See `references/hyperevm.md` for HyperEVM-specific deployment, verification, and big block mode.
+
 ## Multi-Chain Architecture Domains
 
 Evaluate every implementation through these domains:
